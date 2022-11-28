@@ -1,0 +1,8 @@
+# Except Results
+Results/
+
+# Except .ipynbs
+*.ipynb
+
+# Except gitignore for edit in jupyterlab
+gitignore
