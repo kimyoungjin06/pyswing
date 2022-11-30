@@ -13,4 +13,16 @@
 #SBATCH -p PDfN4           # queue  name  or  partiton name
 #SBTACH --ntasks=121 # The Number of jobs
 
-python3 GridSearch_slurm.py --multiproc=True --K_brdg_MAX=1 --P_brdg_MAX=1 --gamma_MAX=1 --K_brdg_Grid=11 --P_brdg_Grid=11 --gamma_Grid=11 --n_grid_init=4 --frequency_max=32 --out_path=20221129
+# python3 GridSearch_slurm.py --multiproc=True --K_brdg_MAX=1 --P_brdg_MAX=1 --gamma_MAX=1 --K_brdg_Grid=11 --P_brdg_Grid=11 --gamma_Grid=11 --n_grid_init=4 --frequency_max=32 --out_path=20221129
+
+#!/bin/bash
+n_grid=32
+fmax=32
+
+for K in $(seq 0 1 5); do
+    for P in $(seq 0 0.1 5); do
+        for gamma in $(seq 0 0.1 5); do
+            python3 GridSearch_slurm.py --K_brdg=$K --P_brdg=$P --gamma=$g --n_grid_init=$n_grid --frequency_max=$fmax 
+        done
+    done
+done
