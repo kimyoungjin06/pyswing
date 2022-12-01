@@ -143,6 +143,43 @@ def Run_Multiple(K_max, K_grid, P_max, P_grid, gamma_max, gamma_grid, n_grid_ini
     print("Number of Core : " + str(N_CPU))
     print("***run time(min) : ", (end-start)/60.)
     
+def Run_Multiple(K_max, K_grid, P_max, P_grid, gamma_max, gamma_grid, n_grid_init, frequency_max, out_path, Norm, N_CPU):
+    """
+    Run_Multiple(K_max, K_grid, P_max, P_grid, gamma_max, gamma_grid, n_grid_init, frequency_max, out_path, N_CPU)
+    """
+    
+    from multiprocessing import Pool
+    import time
+    
+    start = int(time.time())
+    
+    # Get Params
+    paramss = []
+    space_K = np.linspace(1., K_max, K_grid)
+    # space_P = np.linspace(0., P_max, P_grid)
+    # space_g = np.linspace(0., gamma_max, gamma_grid)
+    for K in space_K:
+        # Convert P -> P/K, gamma -> gamma/sqrt(K)
+        if Norm:
+            space_P = np.linspace(0., P_max*K, P_grid)
+            space_g = np.linspace(0., gamma_max*np.sqrt(K), gamma_grid)
+        
+        for P in space_P:
+            for gamma in space_g:
+                num_stats = 0 # For dummy
+                verbose = False
+                params = num_stats, K, P, gamma, n_grid_init, frequency_max, out_path, verbose
+                paramss.append(params)
+                del([[params]])
+        del([[space_P, space_g]])
+
+    p = Pool(processes=N_CPU)
+    result = p.map(Run_Single, paramss)
+    
+    end = int(time.time())
+    print("Number of Core : " + str(N_CPU))
+    print("***run time(min) : ", (end-start)/60.)
+    
 if __name__ == '__main__':
     # Extract argparse
     import argparse
@@ -178,6 +215,10 @@ if __name__ == '__main__':
     n_grid_init = int(args.n_grid_init) + 1
     frequency_max = float(args.frequency_max)
     
+    # If there are no folder
+    if out_path.split('/')[-1] not in os.listdir("Results/"):
+        os.system(f"mkdir {out_path}")
+        
     if MultiProc:
         # Init args
         K_max = float(args.K_brdg_MAX)
