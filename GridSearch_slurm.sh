@@ -19,7 +19,7 @@ fmax=4
 for K in $(seq 1 1 2); do
     for P in $(seq 0 0.1 1); do
         for g in $(seq 0 0.1 1); do
-            python3 GridSearch_slurm.py --K_brdg=$K --P_brdg=$P --gamma=$g --n_grid_init=$n_grid --frequency_max=$fmax
+            ~/miniconda3/envs/latest/bin/python GridSearch_slurm.py --K_brdg=$K --P_brdg=$P --gamma=$g --n_grid_init=$n_grid --frequency_max=$fmax
         done
     done
 done
