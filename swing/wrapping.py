@@ -9,8 +9,6 @@ from .initialize import *
 from .multiprocessing import *
 from .minor import *
 
-font_manager.fontManager.addfont('/disk/disk2/youngjin/workspace/Helvetica.ttf')
-
 def get_result(swing_param, visualize_network=False):
     N, P, K, gamma, t_end, dt, t0g, w0g, t0c, w0c = swing_param
     NN = N*2
