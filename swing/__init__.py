@@ -17,3 +17,4 @@ from . import initialize
 from . import minor
 from . import multiprocessing
 from . import wrapping
+from . import annealed

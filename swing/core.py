@@ -55,11 +55,11 @@ def swing(t, y, m, gamma, P, K, network) -> np.array([[]]):
 #     Interaction = K*SinIntCover(net_addr, net_shape, net_dtype, T)
     Interaction = SinIntE(network, T, K)
     dT = O
-    dO = 1/m*(P - gamma*O - Interaction)
+    dO = 1/m*(P - gamma*O + Interaction)
     dydt = np.concatenate(([dT], [dO]))#, dtype=np.float64)
     return dydt
 
-def RK4(func:np.array, t_end, X0, dt, m, gamma, P, K, network):
+def RK4(func:np.array, t_end, X0, dt, m, gamma, P, K, network, *kwargs):
     """
     Note
     ----
@@ -106,19 +106,19 @@ def RK4(func:np.array, t_end, X0, dt, m, gamma, P, K, network):
     for i in range(t.shape[0]-1):
         t1 = t[i]
         x1 = X[i]
-        k1 = func(t[i], X[i], m, gamma, P, K, network)
+        k1 = func(t[i], X[i], m, gamma, P, K, network, *kwargs)
         
         t2 = t[i] + hdt
         x2 = X[i] + hdt * k1
-        k2 = func(t2, x2, m, gamma, P, K, network)
+        k2 = func(t2, x2, m, gamma, P, K, network, *kwargs)
         
         t3 = t[i] + hdt
         x3 = X[i] + hdt * k2
-        k3 = func(t3, x3, m, gamma, P, K, network)
+        k3 = func(t3, x3, m, gamma, P, K, network, *kwargs)
         
         t4 = t[i] + dt
         x4 = X[i] + dt * k3
-        k4 = func(t4, x4, m, gamma, P, K, network)
+        k4 = func(t4, x4, m, gamma, P, K, network, *kwargs)
         X[i+1] = X[i] + dt / 6. * (k1 + 2. * k2 + 2. * k3 + k4)
     return X
 

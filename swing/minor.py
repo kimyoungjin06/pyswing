@@ -48,3 +48,33 @@ def determiner(omega, N):
     OTM_leaf = np.abs([OTM[:N-1].mean(), OTM[N+1:].mean()]).mean()
     det = OTM_brdg / OTM_leaf
     return det
+
+# Log-log Fitting
+
+def plfunc(x, g, C, x0, y0):
+    """
+    note
+    ----
+    Fitting function with $y = C*(x-x0)^(-G) + y0$.
+    """
+    return C*(x-x0)**(-g) + y0
+
+def log_log_fit(func,x,y,**kwargs):
+    """
+    note
+    ----
+    Fitting with log.
+    """
+    import scipy
+    
+    # Masking Positive bins
+    msk = y > 0
+    x = x[msk]
+    y = y[msk]
+    
+    def f_conv(x, a, b, c, d):
+        return np.log(func(np.exp(x), a, b, c, d))
+    
+    log_x, log_y = np.log(x),np.log(y)
+    
+    return scipy.optimize.curve_fit(f_conv, log_x, log_y,**kwargs)
