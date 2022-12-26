@@ -18,3 +18,4 @@ from . import minor
 from . import multiprocessing
 from . import wrapping
 from . import annealed
+from . import annealed_multilayer

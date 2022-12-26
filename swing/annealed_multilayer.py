@@ -1,4 +1,4 @@
-# swing/annealed.py
+# swing/annealed_multilayer.py
 """
 Note
 -----
@@ -121,7 +121,7 @@ def MeanAngFunc(theta: np.array, degree: np.array, totalDegree, func='sine', lin
     return MeanValue
 
 @nb.jit(nopython=True)
-def MeanInt(theta, degree, totalDegree, meanDegree):
+def MeanInt(theta1, theta2, degree, totalDegree, meanDegree):
     """
     Note
     ----
@@ -129,9 +129,9 @@ def MeanInt(theta, degree, totalDegree, meanDegree):
     
     """
 
-    MS = MeanAngFunc(theta, degree, totalDegree, func="sine")
-    MC = MeanAngFunc(theta, degree, totalDegree, func="cosine")
-    Interactions = (MS*np.cos(theta) - MC*np.sin(theta)) * degree / meanDegree
+    MS = MeanAngFunc(theta2, degree, totalDegree, func="sine")
+    MC = MeanAngFunc(theta2, degree, totalDegree, func="cosine")
+    Interactions = (MS*np.cos(theta1) - MC*np.sin(theta1)) * degree / meanDegree
     return Interactions
 
 def swing_anneal(t, y, m, gamma, P, K, degree, totalDegree, meanDegree) -> np.array([[]]):
@@ -143,9 +143,46 @@ def swing_anneal(t, y, m, gamma, P, K, degree, totalDegree, meanDegree) -> np.ar
     
     # Get Interaction
 #     Interaction = K*SinIntCover(net_addr, net_shape, net_dtype, T)
-    Interaction = K*MeanInt(T, degree, totalDegree, meanDegree)
+    Interaction = K*MeanInt(T, T, degree, totalDegree, meanDegree)
     dT = O
     dO = 1/m*(P - gamma*O + Interaction)
+    dydt = np.concatenate(([dT], [dO]))#, dtype=np.float64)
+    return dydt
+
+def swing_anneal_twoLayer(t, y, m, gamma, P, K, degree, totalDegree, meanDegree
+                          ) -> np.array([[]]):
+    """
+    two network with intra edges
+    \dot{\theta} &= \omega \\
+    \dot{\omega} &= \frac{1}{m}(P-\gamma\omega+\Sigma K\sin(\theta-\phi))
+    """
+    T, O = y
+    N = len(T)//2
+    
+    T_1, T_2 = T[:N], T[N:]
+    O_1, O_2 = O[:N], O[N:]
+    m_1, m_2 = m[:N], m[N:]
+    gamma_1, gamma_2 = gamma[:N], gamma[N:]
+    P_1, P_2 = P[:N], P[N:]
+    degree_1, degree_2, degree_I1, degree_I2 = degree[:N], degree[N:N*2], degree[N*2:N*3], degree[N*3:]
+    totalDegree_1, totalDegree_2, totalDegree_I1, totalDegree_I2 = totalDegree
+    meanDegree_1, meanDegree_2, meanDegree_I1, meanDegree_I2 = meanDegree
+    
+    # Get Interaction
+    ## Layer 1
+    Interaction_1 = K*MeanInt(T_1, T_1, degree_1, totalDegree_1, meanDegree_1)
+    Interaction_1I = K*MeanInt(T_2, T_1, degree_I1, totalDegree_I1, meanDegree_I1)
+    dT_1 = O_1
+    dO_1 = 1/m_1*(P_1 - gamma_1*O_1 + Interaction_1 + Interaction_1I)
+    
+    ## Layer 1
+    Interaction_2 = K*MeanInt(T_2, T_2, degree_2, totalDegree_2, meanDegree_2)
+    Interaction_2I = K*MeanInt(T_1, T_2, degree_I2, totalDegree_I2, meanDegree_I2)
+    dT_2 = O_2
+    dO_2 = 1/m_2*(P_2 - gamma_2*O_2 + Interaction_2 + Interaction_2I)
+    
+    dT = np.append(dT_1, dT_2)
+    dO = np.append(dO_1, dO_2)
     dydt = np.concatenate(([dT], [dO]))#, dtype=np.float64)
     return dydt
 
