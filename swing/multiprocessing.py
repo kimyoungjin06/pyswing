@@ -12,15 +12,144 @@ Use for multiprocessing in single node with multiple core.
 """
 
 import numpy as np
+import pandas as pd
 from multiprocessing import Pool
 import time
 
-from .core import *
-from .initialize import *
-
+from . import core
+from . import initialize
 
 
 # For solving
+### To Do
+# - Unifying Function
+# def solver(func, params, init_func=None, utilize_func=None, intergrate_func):
+#     """
+#     Note
+#     ----
+#     Solving with multiprocess().
+    
+#     Parameter
+#     ---------
+#     params : dict
+#         Contains all parameter-set.
+#     """
+#     # Extract from params
+#     ## For Initializing
+#     N = params['N']
+#     Lambda = params['Lambda'] # For SF, 1 < Lambda < 3
+#     degree_type = params['degree_type'] # or SF, ER
+#     MAXDegree = params['MAXDegree'] # For Lattice, MAXDegree != 0
+#     Backward = params['Backward']
+#     zero_mean_power = params['zero_mean_power']
+#     esl = params['esl'] # For SF, Add to Lambda for when gamma=1
+    
+#     Initialize = swing.annealed_multilayer.Init_Anneal
+#     inits = Initialize(N=N, Backward=Backward, zero_mean_power=zero_mean_power, 
+#                        degree_type=degree_type, MAXDegree=MAXDgree, Lambda=Lambda, esl=esl)
+    
+#     ## For a configuration
+#     K = params['K']
+#     M1 = params['M1']
+#     COEF_GAMMA = params['COEF_GAMMA']
+#     t_end = params['t_end']
+#     dt = params['dt']
+#     target_time = params['target_time']
+def try_make_folder(parent, offspring):
+    import os
+    if offspring.split('/')[-1] not in os.listdir(parent):
+        try:
+            os.system(f"mkdir {offspring}")
+        except:
+            pass
+
+def PrintProfile(num_stats, func, params):
+    from cProfile import Profile
+    profiler = Profile()
+    res = profiler.runcall(func, params)
+    # print(res)
+    from pstats import Stats
+    stats = Stats(profiler)
+    stats.strip_dirs()
+    stats.sort_stats('cumulative')
+    stats.print_stats(num_stats)
+
+
+def Run_Single(kwarg):
+    """
+    Run_Single([kwarg])
+    """
+    model, params, verbose, num_stats, out_path = kwarg
+    # Log parameters
+    pd.DataFrame(params, index=[0]).to_feather(f"{out_path}/parameters.ftr")
+
+    N = params['N']
+    K = params['K']
+    Ensemble = params['Ensemble']
+    COEF_GAMMA = params['COEF_GAMMA']
+    if params['Backward']:
+        B = 'Backward'
+    else:
+        B = 'Forward'
+    # CONST_dt = params['CONST_dt']
+    Output_name = f"temp_res_N{N}_K{K:.2f}_G{COEF_GAMMA}_{B}_E{Ensemble}"  #_CONST_dt{CONST_dt}"
+
+    # # There are already result The code is terminated
+    # if f"{Output_name}.ftr" in os.listdir(f"{out_path}"):
+    #     return 0
+
+    if verbose:
+        # Print upto 50th profiles
+        PrintProfile(num_stats, model, params)
+    else:
+        res = []
+        for Ei in range(Ensemble):
+            _res = model(params)
+            res.append(_res)
+
+        # If there are no folder
+        pd.DataFrame(res, columns=['ensemble']).to_feather(f"{out_path}/{Output_name}.ftr")
+
+
+def Run_Multiple(model, params):
+    """
+    Run_Multiple(params)
+    """
+    from multiprocessing import Pool
+    import time
+
+    start = int(time.time())
+    pd.DataFrame(params, index=[0]).to_feather(f"{out_path}/parameters.ftr")
+
+    K_stt = params['K_stt']
+    K_end = params['K_end'] + 0.0001
+    dK = params['dK']
+    N_CPU = params['N_CPU']
+    K_space = np.arange(K_stt, K_end, dK)
+
+    num_stats = 50
+    verbose = False
+    # Get Params
+    paramss = []
+    for Backward in [True, False]:
+        for K in K_space:
+            params['Backward'] = Backward
+            params['K'] = K
+            _params = model, params.copy(), verbose, num_stats
+            paramss.append(_params)
+
+    p = Pool(processes=N_CPU)
+    result = p.map(Run_Single, paramss)
+
+#     df = pd.DataFrame(result)
+#     df['K'] = np.append(K_space,K_space)
+#     df['Backward'] = [True]*len(K_space) + [False]*len(K_space)
+#     df.to_feather(f"{out_path}/res_tot.ftr")
+
+    end = int(time.time())
+    print("Number of Core : " + str(N_CPU))
+    print("***run time(min) : ", (end-start)/60.)
+
 
 def solve_func(params):
     """
@@ -56,7 +185,7 @@ def solve_func(params):
     # solution, success = lsoda(funcptr, y0, t_eval)
     
     # Integrate with RK4
-    solution = RK4(swing, t_end, y0, dt,
+    solution = core.RK4(swing, t_end, y0, dt,
                    m, gamma, P, K, 
                    network)
     return solution
@@ -98,7 +227,7 @@ def solve_func_with_det(params):
     t_eval = np.arange(0,t_end, dt)
     
     # Integrate with RK4
-    solution = RK4(swing, t_end, y0, dt,
+    solution = core.RK4(swing, t_end, y0, dt,
                    m, gamma, P, K, 
                    network)
     

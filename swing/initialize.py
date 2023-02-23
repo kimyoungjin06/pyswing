@@ -128,6 +128,78 @@ def initialization(N, P, K, gamma=2.0,
     
     return Swing_Parameters, y0, _
 
+
+def Init_general(N=1024, Backward=False, zero_mean_power=False, degree_type='SF', MAXDegree=0, Lambda=2, esl=1E-4):
+    """
+    Note
+    ----
+    - Initialize \theta from 0 to 2\pi (in forward process).
+    - Initialize \omega as 0.
+    - Initialize power is proportional to degree.
+    - Initialize degree as power-law with p(1, MaxDeg, -1*\lambda).
+    
+    Methods
+    -------
+    degree, theta, omega, power = Init_Anneal()
+    
+    Attributes
+    ----------
+    N : int
+        Number of Nodes
+    Backward : True or False
+        For hysteresis, initialize thetas.
+        If False, thetas set to rand(0,1),
+        Else if True, thetas set to zero.
+    zero_mean_power : True or False
+        Condition for Powers have zero-mean.
+        If False, $power = degree/<degree>$
+    degree_type : 'SF', 'ER', or 'Lattice'
+        Degree distribution type of Nodes.
+        If 'SF', the degree follows power-law dist
+        with MAXDegree and Lambda.
+        The esl(epsilon) is very small additional value to Lambda.
+        Else if 'ER', the degree follows Poisson dist
+        with Lambda.
+        Else if 'Lattice', the degree equal to MAXDegree.
+    MAXDegree : int
+        Max degree (for 'SF' or 'ER') or universal degree (for 'Lattice')
+    Lambda : float64
+        Parameter of the degree distribution for 'SF' or 'ER'.
+    esl : float46
+        Add to Lambda for when gamma=1.
+    """
+    rand = np.random.rand
+    tpi = 2*np.pi
+    
+    if MAXDegree<1:
+        try:
+            # Lambda = 1
+            Lambda += esl
+            MAXDegree = int(np.pow(N, 1/(Lambda-1)))
+        except:
+            MAXDegree = N
+    
+    theta = tpi*rand(N) # Forward
+    if Backward:
+        theta = np.zeros(N)
+    omega = np.zeros(N)
+    if degree_type == 'SF':
+        degree = plaw_gen(N, gamma=Lambda, M=MAXDegree).astype(int)
+    elif degree_type == 'ER':
+        degree = np.random.poisson(Lambda, N).astype(int)
+    elif degree_type == 'Lattice':
+        degree = (np.ones(N)*MAXDegree).astype(int)
+    else:
+        raise "Unknown degree type."
+        
+    deg_mean = degree.mean()
+    if zero_mean_power:
+        power = (degree - deg_mean)/deg_mean
+    else:
+        power = (degree)/deg_mean
+
+    return degree, theta, omega, power
+
 # # def set_inits_PK(P, K, t0=0):
 # #     '''
 # #     For Double 3-core Structure

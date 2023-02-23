@@ -41,6 +41,23 @@ def SinIntE(EdgeList: np.array([[]]), T: np.ndarray, K: np.array([[]])):
             sinint[j] -= _int
     return sinint
 
+def SinIntE(EdgeList: np.array([[]]), T: np.ndarray, K: np.array([[]])):
+    """
+    Note
+    ----
+    Calculate with Sin Interaction term with Edge List.
+    - Need to speed optimize for more efficiency.
+    """
+    N = EdgeList[:,0].max() + 1 # Start from 0
+    sinint = np.zeros(N, dtype=np.float64)
+    for i, j in EdgeList:
+        if i < j:
+            _int = K[i,j]*np.sin(T[j] - T[i])
+            sinint[i] += _int
+            sinint[j] -= _int
+    return sinint
+
+
 def swing(t, y, m, gamma, P, K, network) -> np.array([[]]):
     """
     \dot{\theta} &= \omega \\
@@ -104,22 +121,67 @@ def RK4(func:np.array, t_end, X0, dt, m, gamma, P, K, network, *kwargs):
     X[0] = X0
     hdt = dt*.5
     for i in range(t.shape[0]-1):
-        t1 = t[i]
-        x1 = X[i]
-        k1 = func(t[i], X[i], m, gamma, P, K, network, *kwargs)
-        
-        t2 = t[i] + hdt
-        x2 = X[i] + hdt * k1
-        k2 = func(t2, x2, m, gamma, P, K, network, *kwargs)
-        
-        t3 = t[i] + hdt
-        x3 = X[i] + hdt * k2
-        k3 = func(t3, x3, m, gamma, P, K, network, *kwargs)
-        
-        t4 = t[i] + dt
-        x4 = X[i] + dt * k3
-        k4 = func(t4, x4, m, gamma, P, K, network, *kwargs)
-        X[i+1] = X[i] + dt / 6. * (k1 + 2. * k2 + 2. * k3 + k4)
+        X[i+1] = RK4_step(func, t[i], X[i], dt, m, gamma, P, K, network, *kwargs)
+    return X
+
+def RK4_step(func:np.array, t0, X0, dt, m, gamma, P, K, network, *kwargs):
+    """
+    Note
+    ----
+    Runge-Kutta with 4th order.
+    Normally, enough $dt=0.05$ for swing equation on the network.
+    
+    - Backlog
+        - Need to speed optimization with numba.
+        - Update to possible localized gamma.
+
+    ...
+
+    Attributes
+    ----------
+    func : 1d-ndarray
+        A formatted string to print out what the animal says
+    t_end : float64
+        The end of time for iteration
+    X0 : (N,2) 2d-ndarray
+        Initial values of ODE problem
+    dt : float64
+        Unit of time
+    m : float64
+        Intertia of nodes
+    gamma : float64
+        Damping of system (global) or each node (local constants)
+    P : List(float46)
+        Intrinsic powers of each node with size N.
+    K : 2d-ndarray
+        Adjacency Matrix with weighted network.
+    network : (N(E),2) 2d-ndarray
+        Edge list of network with size N(E)
+
+    Methods
+    -------
+    RK4(swing.core.swing, t_end, X0, dt=0.05, 
+        Inertias, Gamma, Powers, K, 
+        Network)
+    """
+    hdt = dt*.5
+    t1 = t0
+    x1 = X0
+    k1 = func(t0, X0, m, gamma, P, K, network, *kwargs)
+
+    t2 = t0 + hdt
+    x2 = X0 + hdt * k1
+    k2 = func(t2, x2, m, gamma, P, K, network, *kwargs)
+
+    t3 = t0 + hdt
+    x3 = X0 + hdt * k2
+    k3 = func(t3, x3, m, gamma, P, K, network, *kwargs)
+
+    t4 = t0 + dt
+    x4 = X0 + dt * k3
+    k4 = func(t4, x4, m, gamma, P, K, network, *kwargs)
+    X = X0 + dt / 6. * (k1 + 2. * k2 + 2. * k3 + k4)
+    
     return X
 
 ########################## In Backlog ########################
