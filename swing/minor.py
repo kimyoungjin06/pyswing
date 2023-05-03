@@ -178,11 +178,15 @@ def Visualize_inits(inits, degree_type, nbin=20):
 
 
 def Initialize(params, Visualize=True):
+    """
+     Methods
+    -------
+    degree, theta, omega, power = Init_Anneal()
+    """
     degree_type = params['degree_type']
     
-    # InitFunc = Init_Anneal
     InitFunc = annealed_multilayer.Init_Anneal
-    inits = annealed_multilayer.single_layer_initialize(InitFunc, params)
+    inits = InitFunc(params)
     if Visualize:
         Visualize_inits(inits, degree_type)
     return inits

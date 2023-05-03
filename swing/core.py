@@ -41,22 +41,6 @@ def SinIntE(EdgeList: np.array([[]]), T: np.ndarray, K: np.array([[]])):
             sinint[j] -= _int
     return sinint
 
-def SinIntE(EdgeList: np.array([[]]), T: np.ndarray, K: np.array([[]])):
-    """
-    Note
-    ----
-    Calculate with Sin Interaction term with Edge List.
-    - Need to speed optimize for more efficiency.
-    """
-    N = EdgeList[:,0].max() + 1 # Start from 0
-    sinint = np.zeros(N, dtype=np.float64)
-    for i, j in EdgeList:
-        if i < j:
-            _int = K[i,j]*np.sin(T[j] - T[i])
-            sinint[i] += _int
-            sinint[j] -= _int
-    return sinint
-
 
 def swing(t, y, m, gamma, P, K, network) -> np.array([[]]):
     """
@@ -75,6 +59,24 @@ def swing(t, y, m, gamma, P, K, network) -> np.array([[]]):
     dO = 1/m*(P - gamma*O + Interaction)
     dydt = np.concatenate(([dT], [dO]))#, dtype=np.float64)
     return dydt
+
+def Kuramoto(t, y, m, gamma, P, K, network) -> np.array([[]]):
+    """
+    \dot{\theta} &= \omega \\
+    \dot{\omega} &= \frac{1}{m}(P-\gamma\omega+\Sigma K\sin(\theta-\phi))
+    """
+    T = y
+
+    m = np.array(m)
+    P = np.array(P)
+
+    # Get Interaction
+#     Interaction = K*SinIntCover(net_addr, net_shape, net_dtype, T)
+    Interaction = SinIntE(network, T, K)
+    dT = (P + Interaction)
+    dydt = dT#, dtype=np.float64)
+    return dydt
+
 
 def RK4(func:np.array, t_end, X0, dt, m, gamma, P, K, network, *kwargs):
     """
@@ -123,6 +125,7 @@ def RK4(func:np.array, t_end, X0, dt, m, gamma, P, K, network, *kwargs):
     for i in range(t.shape[0]-1):
         X[i+1] = RK4_step(func, t[i], X[i], dt, m, gamma, P, K, network, *kwargs)
     return X
+
 
 def RK4_step(func:np.array, t0, X0, dt, m, gamma, P, K, network, *kwargs):
     """

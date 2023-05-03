@@ -145,7 +145,7 @@ def MeanInt(theta1, theta2, degree, totalDegree, meanDegree):
     MC = MeanAngFunc(theta2, degree, totalDegree, func="cosine")
     Interactions = (
         MS * np.cos(theta1) - MC * np.sin(theta1)
-    ) * degree  # / meanDegree
+    ) * degree #/ degree.shape[-1] / meanDegree
     return Interactions
 
 
@@ -217,19 +217,7 @@ def swing_anneal_twoLayer(
 
 # For Initialization
 def Init_Anneal(
-    N=1024,
-    Backward=False,
-    zero_mean_power=False,
-    degree_type="FC",
-    degree_exp=2,
-    MINDegree=1,
-    MAXDegree=0,
-    power_type="Gaussian",
-    power_exp=2,
-    MINPower=5,
-    MAXPower=0,
-    RegularSampling=True,
-    esl=1e-4,
+    params
 ):
     """
     Note
@@ -277,6 +265,12 @@ def Init_Anneal(
     esl : float46
         Add to degree_exp for when gamma=1.
     """
+    N = params['N']
+    Backward = params['Backward']
+    degree_type = params['degree_type']
+    power_type = params['power_type']
+    RegularSampling = params['RegularSampling']
+
     theta = np.pi + Uniform_distribution(np.pi, N, RegularSampling)  # Forward
     if Backward:
         theta = np.zeros(N)
@@ -284,16 +278,22 @@ def Init_Anneal(
 
     # Initialize Degree distribution
     if degree_type == "SF":
+        degree_exp = params['degree_exp']
+        MINDegree = params['MINDegree']
+        MAXDegree = params['MAXDegree']
+        esl = params['esl']
         degree = PowerLaw_distribution(
-            degree_exp, N, RegularSampling, MIN=MINDegree, MAX=MAXDegree
+            degree_exp, N, RegularSampling, MIN=MINDegree, MAX=MAXDegree, esl=esl
         ).astype(int)
 
     elif degree_type == "ER":
+        degree_exp = params['degree_exp']
         degree = np.random.poisson(degree_exp, N).astype(int)
         degree = np.maximum(
             degree, 1.0
         )  # For degree = 0 with low Lambda, d=0 > d=1
     elif degree_type == "Lattice":
+        MAXDegree = params['MAXDegree']
         if MAXDegree == 0:
             MAXDegree = 4
         degree = (np.ones(N) * MAXDegree).astype(int)
@@ -305,17 +305,24 @@ def Init_Anneal(
 
     # Initialize Power
     if power_type == "Gaussian":
+        power_exp = params['power_exp']
         power = Gaussian_distribution(power_exp, N, RegularSampling)
     elif power_type == "Cauchy":
+        power_exp = params['power_exp']
         power = Cauchy_distribution(power_exp, N, RegularSampling)
     elif power_type == "PowerLaw":
+        zero_mean_power = params['zero_mean_power']
+        MINPower = params['MINPower']
+        MAXPower = params['MAXPower']
+        esl = params['esl']
         if zero_mean_power:
             power = (degree - deg_mean) / deg_mean
         else:
             power = PowerLaw_distribution(
-                power_exp, N, RegularSampling, MIN=MINPower, MAX=MAXPower
+                power_exp, N, RegularSampling, MIN=MINPower, MAX=MAXPower, esl=esl
             )
     elif power_type == "Uniform":
+        power_exp = params['power_exp']
         power = Uniform_distribution(power_exp, N, RegularSampling)
     else:
         raise Exception("Unknown power type.")
@@ -360,7 +367,8 @@ def PowerLaw_distribution(
     N,
     RegularSampling,
     MIN=1,
-    MAX=0
+    MAX=0,
+    esl=1e-2
 ):
     """
     note
@@ -409,38 +417,38 @@ def Uniform_distribution(gamma, N, RegularSampling):
 
 
 
-def single_layer_initialize(Initialize, params):
-    # For Inits
-    N = params["N"]
-    degree_type = params["degree_type"]  # or SF, ER
-    degree_exp = params["degree_exp"] # For SF, 1 < Lambda < 3
-    MINDegree = params["MINDegree"]  # For Lattice, MAXDegree != 0
-    MAXDegree = params["MAXDegree"]  # For Lattice, MAXDegree != 0
-    power_type = params["power_type"]
-    power_exp = params["power_exp"]
-    MINPower = params["MINPower"]
-    MAXPower = params["MAXPower"]
-    RegularSampling = params["RegularSampling"]
-    Backward = params["Backward"]
-    zero_mean_power = params["zero_mean_power"]
-    esl = params["esl"]  # For SF, Add to Lambda for when gamma=1
+# def single_layer_initialize(Initialize, params):
+#     # For Inits
+#     N = params["N"]
+#     degree_type = params["degree_type"]  # or SF, ER
+#     degree_exp = params["degree_exp"] # For SF, 1 < Lambda < 3
+#     MINDegree = params["MINDegree"]  # For Lattice, MAXDegree != 0
+#     MAXDegree = params["MAXDegree"]  # For Lattice, MAXDegree != 0
+#     power_type = params["power_type"]
+#     power_exp = params["power_exp"]
+#     MINPower = params["MINPower"]
+#     MAXPower = params["MAXPower"]
+#     RegularSampling = params["RegularSampling"]
+#     Backward = params["Backward"]
+#     zero_mean_power = params["zero_mean_power"]
+#     esl = params["esl"]  # For SF, Add to Lambda for when gamma=1
 
-    inits = Initialize(
-        N=N,
-        Backward=Backward,
-        zero_mean_power=zero_mean_power,
-        degree_type=degree_type,
-        degree_exp=degree_exp,
-        MINDegree=MINDegree,
-        MAXDegree=MAXDegree,
-        power_type=power_type,
-        power_exp=power_exp,
-        MINPower=MINPower,
-        MAXPower=MAXPower,
-        RegularSampling=RegularSampling,
-        esl=esl,
-    )
-    return inits
+#     inits = Initialize(
+#         N=N,
+#         Backward=Backward,
+#         zero_mean_power=zero_mean_power,
+#         degree_type=degree_type,
+#         degree_exp=degree_exp,
+#         MINDegree=MINDegree,
+#         MAXDegree=MAXDegree,
+#         power_type=power_type,
+#         power_exp=power_exp,
+#         MINPower=MINPower,
+#         MAXPower=MAXPower,
+#         RegularSampling=RegularSampling,
+#         esl=esl,
+#     )
+#     return inits
 
 
 def get_layer_information(inits, M, COEF_GAMMA, N):
@@ -529,7 +537,7 @@ def solve_func_with_orderparam(params):
 
     # Configuration
     Initialize = Init_Anneal
-    inits = single_layer_initialize(Initialize, params)
+    inits = Initialize(params)
     (
         m,
         gamma,
@@ -577,7 +585,7 @@ def solve_func_with_orderparam2(params):
 
     # Configuration
     Initialize = Init_Anneal
-    inits = single_layer_initialize(Initialize, params)
+    inits = Initialize(params)
     (
         m,
         gamma,
@@ -605,8 +613,12 @@ def solve_func_with_orderparam2(params):
         res = core.RK4(func, t_end, X0, dt, m, gamma, P, K, degree, *kwargs)
         T, O = res[N_window:, 0, :], res[N_window:, 1, :]
 
-    new_phase = get_new_phase(T, degree, totalDegree)
-    order_param = get_orderparameter(new_phase, degree, totalDegree, N=N_window)
+    sin = np.sin(T)
+    cos = np.cos(T)
+    phase_new, phase_mean = get_new_phase(T, degree, totalDegree, sin=sin, cos=cos)
+    sin = np.sin(phase_new)
+    cos = np.cos(phase_new)
+    order_param = get_orderparameter(phase_new, degree, totalDegree, N=N_window, sin=sin, cos=cos)
     # order_param = get_orderparameter(
     #     T, degree, totalDegree, N=N_window
     # )
@@ -639,13 +651,16 @@ def get_order_param(params):
 
 
 # Minor #####################
-def get_new_phase(phase, sin, cos, degree, totalDegree):
+def get_new_phase(phase, degree, totalDegree, sin=None, cos=None):
     """
     Note
     ----
     Get new phase from mean-phase
     Pre calculate Sin and Cosine
     """
+    if sin is None:
+        sin = np.sin(phase)
+        cos = np.cos(phase)
     MS = (degree * sin).sum(axis=1) / totalDegree
     MC = (degree * cos).sum(axis=1) / totalDegree
     phase_mean = np.arctan2(MS, MC)
@@ -654,7 +669,7 @@ def get_new_phase(phase, sin, cos, degree, totalDegree):
 
 
 def get_orderparameter(
-    phase, sin, cos, degree, totalDegree, TimeAverageFirst=True, N=1000
+    phase, degree, totalDegree, TimeAverageFirst=True, N=1000, sin=None, cos=None
 ):
     """
     Note
@@ -663,11 +678,12 @@ def get_orderparameter(
     If TimeAverageFirst, apply moving average for all nodes.
     N is the window size for dt-steps.
     """
-    S = np.sin(phase)
-    C = np.cos(phase)
+    if sin is None:
+        sin = np.sin(phase)
+        cos = np.cos(phase)
     if TimeAverageFirst:
-        S = time_average(sin, N)
-        C = time_average(cos, N)
+        sin = time_average(sin, N)
+        cos = time_average(cos, N)
     MS = (degree * sin).sum(axis=1) / totalDegree
     MC = (degree * cos).sum(axis=1) / totalDegree
 

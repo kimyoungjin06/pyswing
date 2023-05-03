@@ -18,6 +18,7 @@ import time
 
 from . import core
 from . import initialize
+from . import minor, annealed_multilayer
 
 
 # For solving
@@ -109,6 +110,118 @@ def Run_Single(kwarg):
 
         # If there are no folder
         pd.DataFrame(res, columns=['ensemble']).to_feather(f"{out_path}/{Output_name}.ftr")
+
+
+def Run_R_dist(kwarg):
+    """
+    Run_Single([kwarg])
+    """
+    model, params, verbose, num_stats, out_path = kwarg
+    # Log parameters
+    pd.DataFrame(params, index=[0]).to_feather(f"{out_path}/parameters.ftr")
+
+    N = params['N']
+    N_iter = params['N_iter']
+    K = params['K']
+    Ensemble = params['Ensemble']
+    COEF_GAMMA = params['COEF_GAMMA']
+    index = params['index']
+    if params['Backward']:
+        B = 'Backward'
+    else:
+        B = 'Forward'
+
+    if verbose:
+        # Print upto 50th profiles
+        PrintProfile(num_stats, model, params)
+    else:
+        phases = np.zeros((N_iter, params['N']))
+        frequencies = np.zeros((N_iter, params['N']))
+        orderparams = np.zeros(N_iter)
+
+        for i in range(N_iter):
+            inits = minor.Initialize(params, Visualize=False)
+            res = simulate_Forward(params, inits, Visualize=False)
+            t, T, O, P, degree, totalDegree, meanDegree = res
+
+            phases[i], frequencies[i] = get_average_res(T, O, params)
+            orderparam = annealed_multilayer.get_orderparameter(
+            T, degree, totalDegree, TimeAverageFirst=False, N=1
+        )
+            orderparams[i] = orderparam[-1]
+
+        # If there are no folder
+        fname = f"r_N{params['N']}_M{params['M1']:.0f}_t{params['t_end']:.0f}_P{params['target_time']:.0f}_{index}.ftr"
+        pd.DataFrame(orderparams, columns=['orderparam']).to_feather(f'{out_path}/{fname}')
+
+
+def simulate_Forward(params, inits, Visualize=True):
+    N, degree_exp, degree_type, MINDegree, MAXDegree, Backward, zero_mean_power, esl = (
+        params["N"],
+        params["degree_exp"],
+        params["degree_type"],
+        params["MINDegree"],
+        params["MAXDegree"],
+        params["Backward"],
+        params["zero_mean_power"],
+        params["esl"],
+    )
+
+    K, M1, COEF_GAMMA, t_end, dt = (
+        params["K"],
+        params["M1"],
+        params["COEF_GAMMA"],
+        params["t_end"],
+        params["dt"],
+    )
+    ReduceMemory = params["ReduceMemory"]
+    target_time = params["target_time"]
+    N_window = int(target_time / dt)
+
+    # Layer1 ordinary
+    degree_1, theta_1, omega_1, power_1 = inits
+    m_1, gamma_1 = M1, COEF_GAMMA * M1
+    totalDegree_1 = degree_1.sum()
+    meanDegree_1 = totalDegree_1 / N
+
+    # Total System
+    theta, omega = theta_1, omega_1
+    X0 = np.concatenate(([theta], [omega]))
+
+    m = np.array([m_1] * N)
+    gamma = np.array([gamma_1] * N)
+    P = power_1
+
+    degree = degree_1
+    totalDegree = totalDegree_1
+    meanDegree = meanDegree_1
+
+    kwargs = [totalDegree, meanDegree]
+    func = annealed_multilayer.swing_anneal
+    if ReduceMemory:
+        res = np.zeros((N_window, 2, N))
+        t = np.arange(0.0, t_end, dt)
+        res[0] = X0
+        hdt = dt * 0.5
+        for i in range(t.shape[0] - 1):
+            res[(i + 1) % N_window] = core.RK4_step(
+                func, t[i], res[i%N_window], dt, m, gamma, P, K, degree, *kwargs
+            )
+    else:
+        res = core.RK4(func, t_end, X0, dt, m, gamma, P, K, degree, *kwargs)
+
+
+    t = np.arange(0, t_end, dt)[-N_window:]
+    T, O = res[:, 0, :], res[:, 1, :]
+    return t, T, O, P, degree, totalDegree, meanDegree
+
+
+def get_average_res(T, O, params):
+    dt = params["dt"]
+    target_time = params["target_time"]
+    N_window = int(target_time / dt)
+
+    return T[-N_window:].mean(axis=0), O[-N_window:].mean(axis=0)
 
 
 def Run_Multiple(model, params):
