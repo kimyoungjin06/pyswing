@@ -3,6 +3,10 @@
 Note
 -----
 Made by Young Jin Kim (kimyoungjin06@gmail.com)
+Update at 2023.05.03, Yj Kim:
+- Add 1st-order Kuramoto Model
+- Add Blended Model (1st-order with m==0)
+- Add weight option in MeanAngFunc
 
 Update at 2023.2.21, YJ Kim:
 - Add Regular Sampling with ["Gaussian", "Cauchy", "PowerLaw", "Uniform"]
@@ -110,6 +114,7 @@ def MeanAngFunc(
     totalDegree,
     func="sine",
     linearization=False,
+    weighted=False
 ):
     """
     Note
@@ -122,12 +127,17 @@ def MeanAngFunc(
     func : 'sine' or 'cosine'
         A formatted string to print out what the animal says
     """
+    if weighted:
+        const = degree / totalDegree
+    else:
+        const = (degree * 0) + (1. / len(theta))
     if func == "cosine":
-        MeanValue = (degree * np.cos(theta)).sum() / totalDegree
+        MeanValue = (const * np.cos(theta)).sum()
     elif func == "sine":
-        MeanValue = (degree * np.sin(theta)).sum() / totalDegree
         if linearization:
-            MeanValue = (degree * theta).sum() / totalDegree
+            MeanValue = (const * theta).sum()
+        else:
+            MeanValue = (const * np.sin(theta)).sum()
     # else:
     #     raise "Unknown function type; Only 'sine' or 'cosine'"
     return MeanValue
@@ -164,6 +174,56 @@ def swing_anneal(
     dT = O
     dO = 1 / m * (P - gamma * O + Interaction)
     dydt = np.concatenate(([dT], [dO]))  # , dtype=np.float64)
+    return dydt
+
+
+def Kuramoto(t, y, m, gamma, P, K, degree, totalDegree, meanDegree) -> np.array([[]]):
+    """
+    \dot{\theta} &= \omega \\
+    \dot{\omega} &= \frac{1}{m}(P-\gamma\omega+\Sigma K\sin(\theta-\phi))
+    """
+    T = y
+
+    m = np.array(m)
+    P = np.array(P)
+
+    # Get Interaction
+#     Interaction = K*SinIntCover(net_addr, net_shape, net_dtype, T)
+    Interaction =  K * MeanInt(T, T, degree, totalDegree, meanDegree)
+    dT = (P + Interaction)
+    dydt = dT#, dtype=np.float64)
+    return dydt
+
+
+def Blended(t, y, m, gamma, P, K, degree, totalDegree, meanDegree) -> np.array([[]]):
+    """
+    Some nodes (without mass) interact like 1st order Kuramoto model.
+    Other nodes (with mass) interact like 2nd order Kuramoto model.
+    """
+    T, O = y
+
+    m = np.array(m)
+    P = np.array(P)
+
+    # Get Interaction
+#     Interaction = K*SinIntCover(net_addr, net_shape, net_dtype, T)
+    Interaction =  K * MeanInt(T, T, degree, totalDegree, meanDegree)
+
+    # Masking
+    msk = m > 0
+    msk_1st = ~msk
+    msk_2nd = msk
+
+    dT = np.zeros(m.shape[0])
+    dO = np.zeros(m.shape[0])
+
+    ## 1st
+    dT[msk_1st] = (P[msk_1st] + Interaction[msk_1st])
+
+    ## 2nd
+    dT[msk_2nd] = O[msk_2nd]
+    dO[msk_2nd] = 1/m[msk_2nd]*(P[msk_2nd] - gamma[msk_2nd]*O[msk_2nd] + Interaction[msk_2nd])
+    dydt = np.concatenate(([dT], [dO]))#, dtype=np.float64)
     return dydt
 
 
@@ -270,8 +330,11 @@ def Init_Anneal(
     degree_type = params['degree_type']
     power_type = params['power_type']
     RegularSampling = params['RegularSampling']
+    Irregular_Theta = params["Irregular_Theta"]
 
     theta = np.pi + Uniform_distribution(np.pi, N, RegularSampling)  # Forward
+    if Irregular_Theta:
+        theta = Uniform_distribution(np.pi, N, False)
     if Backward:
         theta = np.zeros(N)
     omega = np.zeros(N)

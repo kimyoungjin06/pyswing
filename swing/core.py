@@ -48,7 +48,7 @@ def swing(t, y, m, gamma, P, K, network) -> np.array([[]]):
     \dot{\omega} &= \frac{1}{m}(P-\gamma\omega+\Sigma K\sin(\theta-\phi))
     """
     T, O = y
-    
+
     m = np.array(m)
     P = np.array(P)
 
@@ -77,6 +77,37 @@ def Kuramoto(t, y, m, gamma, P, K, network) -> np.array([[]]):
     dydt = dT#, dtype=np.float64)
     return dydt
 
+
+def Blended(t, y, m, gamma, P, K, network) -> np.array([[]]):
+    """
+    Some nodes (without mass) interact like 1st order Kuramoto model.
+    Other nodes (with mass) interact like 2nd order Kuramoto model.
+    """
+    T, O = y
+
+    m = np.array(m)
+    P = np.array(P)
+
+    # Get Interaction
+#     Interaction = K*SinIntCover(net_addr, net_shape, net_dtype, T)
+    Interaction = SinIntE(network, T, K)
+
+    # Masking
+    msk = m > 0
+    msk_1st = ~msk
+    msk_2nd = msk
+
+    dT = np.zeros(m.shape[0])
+    dO = np.zeros(m.shape[0])
+
+    ## 1st
+    dT[msk_1st] = (P[msk_1st] + Interaction[msk_1st])
+
+    ## 2nd
+    dT[msk_2nd] = O[msk_2nd]
+    dO[msk_2nd] = 1/m[msk_2nd]*(P[msk_2nd] - gamma[msk_2nd]*O[msk_2nd] + Interaction[msk_2nd])
+    dydt = np.concatenate(([dT], [dO]))#, dtype=np.float64)
+    return dydt
 
 def RK4(func:np.array, t_end, X0, dt, m, gamma, P, K, network, *kwargs):
     """

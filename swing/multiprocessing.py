@@ -20,6 +20,110 @@ from . import core
 from . import initialize
 from . import minor, annealed_multilayer
 
+def get_mass(ms, N):
+    n = len(ms)
+    dN = N//n
+    mass = []
+    for m in ms:
+        mass += [m] * dN
+    return mass
+
+
+def simulate_Forward_multi_M(params, inits, Visualize=True):
+    N = params["N"]
+    K = params["K"]
+    m = params["m"]
+    gamma = params["gamma"]
+
+    transient = params["transient"]
+    t_end = params["t_end"]
+    dt = params["dt"]
+    scope_dt = params["scope_dt"]
+
+    degree, theta, omega, power = inits
+    X = np.concatenate(([theta], [omega]))
+
+    totalDegree = degree.sum()
+    meanDegree = totalDegree / N
+    kwargs = [totalDegree, meanDegree]
+
+    if scope_dt > 0:
+        scope_size = 1. / scope_dt
+        window_size = int(scope_dt/dt)
+        memory_size = int(t_end * scope_size)
+        res = np.zeros((memory_size, 2, N))
+    else:
+        res_mean = np.zeros((1, 2, N))
+
+    ms = [params['m']]
+    if params['Dual_mass']:
+        ms = [params['m'], params['M']]
+    mass = get_mass(ms, N)
+    gamma = np.array([gamma] * N)
+    P = power
+    func = annealed_multilayer.Blended
+
+    i_scope = 0
+    t = np.arange(0, t_end, dt)
+    for i, _t in enumerate(t): # Run before average
+        X = core.RK4_step(
+            func, t[i], X, dt, mass, gamma, P, K, degree, *kwargs
+        )
+        if scope_dt > 0:
+            if (i+1)%window_size == 0:
+                res[i_scope] = X
+                i_scope += 1
+        else:
+            if _t > transient:
+                res_mean[0] += X
+
+    if scope_dt > 0:
+        theta, omega = res[:, 0, :], res[:, 1, :]
+        t = np.arange(0, t_end, scope_dt)
+    else:
+        theta, omega = (res_mean[:, 0, :]/t.shape[0]), res_mean[:, 1, :]/t.shape[0]
+        t = t[-1:]
+    return t, theta, omega, P, degree, totalDegree, meanDegree
+
+
+def get_result(inits, params, verbose=False):
+    uniform = annealed_multilayer.Uniform_distribution
+
+    df_tot = []
+    cols = np.arange(params['N']).astype('str')
+    RSC = params['RegularSampling']
+    FC = not params['Backward']
+    ITC = params["Irregular_Theta"]
+    Resample_Condition = RSC & FC & ITC
+    for e in range(params['Ensemble']):
+        if Resample_Condition:
+            thetas = uniform(np.pi, params['N'], False)
+            inits[1] = thetas
+        res = simulate_Forward_multi_M(params, inits, Visualize=False)
+        if verbose:
+            return res
+        t, T, O, P, degree, totalDegree, meanDegree = res
+        df = pd.DataFrame(columns = cols)
+
+        df.loc['P'] = P
+        df.loc['theta'] = T[0]
+        df.loc['omega'] = O[0]
+        df_tot.append(df)
+
+    df_tot = pd.concat(df_tot)
+
+    m = params['m']
+    K = params['K']
+    ens = params['Ensemble']
+    G = params['gamma']
+    if params['Backward']:
+        B = 'Backward'
+    else:
+        B = 'Forward'
+    outpath = params['out_path']
+    out_name = f'{outpath}/m{m:.2f}_K{K:.2f}_G{G:.2f}_E{ens}_{B}.parquet'
+
+    df_tot.to_parquet(out_name)
 
 # For solving
 ### To Do
