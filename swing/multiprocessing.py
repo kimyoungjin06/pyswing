@@ -28,7 +28,6 @@ def get_mass(ms, N):
         mass += [m] * dN
     return mass
 
-
 def simulate_Forward_multi_M(params, inits, Visualize=True):
     N = params["N"]
     K = params["K"]
@@ -81,6 +80,7 @@ def simulate_Forward_multi_M(params, inits, Visualize=True):
         theta, omega = res[:, 0, :], res[:, 1, :]
         t = np.arange(0, t_end, scope_dt)
     else:
+        t = np.arange(transient, t_end, dt)
         theta, omega = (res_mean[:, 0, :]/t.shape[0]), res_mean[:, 1, :]/t.shape[0]
         t = t[-1:]
     return t, theta, omega, P, degree, totalDegree, meanDegree
