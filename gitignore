@@ -1,0 +1,12 @@
+# Except Results
+Results/
+
+
+# Except gitignore for edit in jupyterlab
+gitignore
+
+# Except caches
+.ipynb_checkpoints/
+__pycache__/
+swing/.ipynb_checkpoints/
+swing/__pycache__/

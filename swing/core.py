@@ -48,7 +48,11 @@ def swing(t, y, m, gamma, P, K, network) -> np.array([[]]):
     \dot{\omega} &= \frac{1}{m}(P-\gamma\omega+\Sigma K\sin(\theta-\phi))
     """
     T, O = y
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> 0dc8452 (update)
     m = np.array(m)
     P = np.array(P)
 
@@ -78,6 +82,7 @@ def Kuramoto(t, y, m, gamma, P, K, network) -> np.array([[]]):
     return dydt
 
 
+<<<<<<< HEAD
 def Blended(t, y, m, gamma, P, K, network) -> np.array([[]]):
     """
     Some nodes (without mass) interact like 1st order Kuramoto model.
@@ -109,6 +114,8 @@ def Blended(t, y, m, gamma, P, K, network) -> np.array([[]]):
     dydt = np.concatenate(([dT], [dO]))#, dtype=np.float64)
     return dydt
 
+=======
+>>>>>>> 0dc8452 (update)
 def RK4(func:np.array, t_end, X0, dt, m, gamma, P, K, network, *kwargs):
     """
     Note

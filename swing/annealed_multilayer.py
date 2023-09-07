@@ -3,10 +3,13 @@
 Note
 -----
 Made by Young Jin Kim (kimyoungjin06@gmail.com)
+<<<<<<< HEAD
 Update at 2023.05.03, Yj Kim:
 - Add 1st-order Kuramoto Model
 - Add Blended Model (1st-order with m==0)
 - Add weight option in MeanAngFunc
+=======
+>>>>>>> 0dc8452 (update)
 
 Update at 2023.2.21, YJ Kim:
 - Add Regular Sampling with ["Gaussian", "Cauchy", "PowerLaw", "Uniform"]
@@ -114,7 +117,10 @@ def MeanAngFunc(
     totalDegree,
     func="sine",
     linearization=False,
+<<<<<<< HEAD
     weighted=False
+=======
+>>>>>>> 0dc8452 (update)
 ):
     """
     Note
@@ -127,6 +133,7 @@ def MeanAngFunc(
     func : 'sine' or 'cosine'
         A formatted string to print out what the animal says
     """
+<<<<<<< HEAD
     if weighted:
         const = degree / totalDegree
     else:
@@ -138,6 +145,14 @@ def MeanAngFunc(
             MeanValue = (const * theta).sum()
         else:
             MeanValue = (const * np.sin(theta)).sum()
+=======
+    if func == "cosine":
+        MeanValue = (degree * np.cos(theta)).sum() / totalDegree
+    elif func == "sine":
+        MeanValue = (degree * np.sin(theta)).sum() / totalDegree
+        if linearization:
+            MeanValue = (degree * theta).sum() / totalDegree
+>>>>>>> 0dc8452 (update)
     # else:
     #     raise "Unknown function type; Only 'sine' or 'cosine'"
     return MeanValue
@@ -177,6 +192,7 @@ def swing_anneal(
     return dydt
 
 
+<<<<<<< HEAD
 def Kuramoto(t, y, m, gamma, P, K, degree, totalDegree, meanDegree) -> np.array([[]]):
     """
     \dot{\theta} &= \omega \\
@@ -227,6 +243,8 @@ def Blended(t, y, m, gamma, P, K, degree, totalDegree, meanDegree) -> np.array([
     return dydt
 
 
+=======
+>>>>>>> 0dc8452 (update)
 def swing_anneal_twoLayer(
     t, y, m, gamma, P, K, degree, totalDegree, meanDegree
 ) -> np.array([[]]):
@@ -330,11 +348,16 @@ def Init_Anneal(
     degree_type = params['degree_type']
     power_type = params['power_type']
     RegularSampling = params['RegularSampling']
+<<<<<<< HEAD
     Irregular_Theta = params["Irregular_Theta"]
 
     theta = np.pi + Uniform_distribution(np.pi, N, RegularSampling)  # Forward
     if Irregular_Theta:
         theta = Uniform_distribution(np.pi, N, False)
+=======
+
+    theta = np.pi + Uniform_distribution(np.pi, N, RegularSampling)  # Forward
+>>>>>>> 0dc8452 (update)
     if Backward:
         theta = np.zeros(N)
     omega = np.zeros(N)

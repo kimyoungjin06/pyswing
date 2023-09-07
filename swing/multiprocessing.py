@@ -20,6 +20,7 @@ from . import core
 from . import initialize
 from . import minor, annealed_multilayer
 
+<<<<<<< HEAD
 def get_mass(ms, N):
     n = len(ms)
     dN = N//n
@@ -124,6 +125,8 @@ def get_result(inits, params, verbose=False):
     out_name = f'{outpath}/m{m:.2f}_K{K:.2f}_G{G:.2f}_E{ens}_{B}.parquet'
 
     df_tot.to_parquet(out_name)
+=======
+>>>>>>> 0dc8452 (update)
 
 # For solving
 ### To Do
