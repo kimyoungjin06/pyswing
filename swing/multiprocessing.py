@@ -21,6 +21,7 @@ from . import initialize
 from . import minor, annealed_multilayer
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 def get_mass(ms, N):
     n = len(ms)
     dN = N//n
@@ -127,6 +128,8 @@ def get_result(inits, params, verbose=False):
     df_tot.to_parquet(out_name)
 =======
 >>>>>>> 0dc8452 (update)
+=======
+>>>>>>> master
 
 # For solving
 ### To Do

@@ -4,12 +4,15 @@ Note
 -----
 Made by Young Jin Kim (kimyoungjin06@gmail.com)
 <<<<<<< HEAD
+<<<<<<< HEAD
 Update at 2023.05.03, Yj Kim:
 - Add 1st-order Kuramoto Model
 - Add Blended Model (1st-order with m==0)
 - Add weight option in MeanAngFunc
 =======
 >>>>>>> 0dc8452 (update)
+=======
+>>>>>>> master
 
 Update at 2023.2.21, YJ Kim:
 - Add Regular Sampling with ["Gaussian", "Cauchy", "PowerLaw", "Uniform"]
@@ -118,9 +121,12 @@ def MeanAngFunc(
     func="sine",
     linearization=False,
 <<<<<<< HEAD
+<<<<<<< HEAD
     weighted=False
 =======
 >>>>>>> 0dc8452 (update)
+=======
+>>>>>>> master
 ):
     """
     Note
@@ -134,6 +140,7 @@ def MeanAngFunc(
         A formatted string to print out what the animal says
     """
 <<<<<<< HEAD
+<<<<<<< HEAD
     if weighted:
         const = degree / totalDegree
     else:
@@ -146,13 +153,18 @@ def MeanAngFunc(
         else:
             MeanValue = (const * np.sin(theta)).sum()
 =======
+=======
+>>>>>>> master
     if func == "cosine":
         MeanValue = (degree * np.cos(theta)).sum() / totalDegree
     elif func == "sine":
         MeanValue = (degree * np.sin(theta)).sum() / totalDegree
         if linearization:
             MeanValue = (degree * theta).sum() / totalDegree
+<<<<<<< HEAD
 >>>>>>> 0dc8452 (update)
+=======
+>>>>>>> master
     # else:
     #     raise "Unknown function type; Only 'sine' or 'cosine'"
     return MeanValue
@@ -192,6 +204,7 @@ def swing_anneal(
     return dydt
 
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 def Kuramoto(t, y, m, gamma, P, K, degree, totalDegree, meanDegree) -> np.array([[]]):
     """
@@ -245,6 +258,8 @@ def Blended(t, y, m, gamma, P, K, degree, totalDegree, meanDegree) -> np.array([
 
 =======
 >>>>>>> 0dc8452 (update)
+=======
+>>>>>>> master
 def swing_anneal_twoLayer(
     t, y, m, gamma, P, K, degree, totalDegree, meanDegree
 ) -> np.array([[]]):
@@ -349,6 +364,7 @@ def Init_Anneal(
     power_type = params['power_type']
     RegularSampling = params['RegularSampling']
 <<<<<<< HEAD
+<<<<<<< HEAD
     Irregular_Theta = params["Irregular_Theta"]
 
     theta = np.pi + Uniform_distribution(np.pi, N, RegularSampling)  # Forward
@@ -358,6 +374,10 @@ def Init_Anneal(
 
     theta = np.pi + Uniform_distribution(np.pi, N, RegularSampling)  # Forward
 >>>>>>> 0dc8452 (update)
+=======
+
+    theta = np.pi + Uniform_distribution(np.pi, N, RegularSampling)  # Forward
+>>>>>>> master
     if Backward:
         theta = np.zeros(N)
     omega = np.zeros(N)

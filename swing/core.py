@@ -49,10 +49,14 @@ def swing(t, y, m, gamma, P, K, network) -> np.array([[]]):
     """
     T, O = y
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
     
 >>>>>>> 0dc8452 (update)
+=======
+    
+>>>>>>> master
     m = np.array(m)
     P = np.array(P)
 
@@ -82,6 +86,7 @@ def Kuramoto(t, y, m, gamma, P, K, network) -> np.array([[]]):
     return dydt
 
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 def Blended(t, y, m, gamma, P, K, network) -> np.array([[]]):
     """
@@ -116,6 +121,8 @@ def Blended(t, y, m, gamma, P, K, network) -> np.array([[]]):
 
 =======
 >>>>>>> 0dc8452 (update)
+=======
+>>>>>>> master
 def RK4(func:np.array, t_end, X0, dt, m, gamma, P, K, network, *kwargs):
     """
     Note
